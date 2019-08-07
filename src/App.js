@@ -1,24 +1,15 @@
 import React, { Component } from "react";
 import { ApolloProvider } from "react-apollo";
 import client from "./client";
-import gql from "graphql-tag";
 import { Query } from "react-apollo";
-
-const ME = gql`
-  query me {
-    user(login: "keikurimoto721") {
-      name
-      avatarUrl
-    }
-  }
-`;
+import { HUM } from "./graphql";
 
 class App extends Component {
   render() {
     return (
       <ApolloProvider client={client}>
         <div>Hello, GraphQL</div>
-        <Query query={ME}>
+        <Query query={HUM}>
           {({ loading, error, data }) => {
             if (loading) return "Loading...";
             if (error) return `Error! ${error.message}`;
