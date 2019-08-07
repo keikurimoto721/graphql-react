@@ -10,7 +10,7 @@ const DEFAULT_STATE = {
   after: null,
   last: null,
   before: null,
-  query: "フロントエンドエンジニア"
+  query: "Repatch"
 };
 
 class App extends Component {
@@ -56,7 +56,10 @@ class App extends Component {
 
             console.log({ query });
             console.log({ data });
-            return <div />;
+            const repoCount = data.search.repositoryCount;
+            const repoUnit = repoCount > 1 ? "Repositories" : "Repository";
+            const title = `Results: ${repoCount} ${repoUnit} !`;
+            return <h2>{title}</h2>;
           }}
         </Query>
       </ApolloProvider>
