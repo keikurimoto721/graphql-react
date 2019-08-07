@@ -4,8 +4,8 @@ import client from "./client";
 import { Query } from "react-apollo";
 import { ME, HUM, SEARCH_REPOSITORIES } from "./graphql";
 
-// VARIABLES
-const VARIABLES = {
+// DEFAULT_STATE
+const DEFAULT_STATE = {
   first: 5,
   after: null,
   last: null,
@@ -17,13 +17,33 @@ class App extends Component {
   // variablesの初期化
   constructor(props) {
     super(props);
-    this.state = VARIABLES;
+    this.state = DEFAULT_STATE;
+
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleChange(event) {
+    this.setState({
+      ...DEFAULT_STATE,
+      query: event.target.value
+    });
+  }
+
+  handleSubmit(event) {
+    // submitボタンはないのでpreventDefault
+    event.preventDefault();
   }
 
   render() {
     const { query, first, last, before, after } = this.state;
+
     return (
       <ApolloProvider client={client}>
+        <form onSubmit={this.handleSubmit}>
+          <input value={query} onChange={this.handleChange} size="50" />
+        </form>
+
         <div>Hello, GraphQL</div>
 
         <Query
@@ -34,6 +54,7 @@ class App extends Component {
             if (loading) return "Loading...";
             if (error) return `Error! ${error.message}`;
 
+            console.log({ query });
             console.log({ data });
             return <div />;
           }}
