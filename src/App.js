@@ -4,9 +4,10 @@ import client from "./client";
 import { Query } from "react-apollo";
 import { ME, HUM, SEARCH_REPOSITORIES } from "./graphql";
 
+const PER_PAGE = 5;
 // DEFAULT_STATE
 const DEFAULT_STATE = {
-  first: 5,
+  first: PER_PAGE,
   after: null,
   last: null,
   before: null,
@@ -35,6 +36,16 @@ class App extends Component {
     event.preventDefault();
   }
 
+  // 次へボタン押下時の処理
+  goNext(search) {
+    this.setState({
+      first: PER_PAGE,
+      after: search.pageInfo.endCursor,
+      last: null,
+      before: null
+    });
+  }
+
   render() {
     const { query, first, last, before, after } = this.state;
 
@@ -56,14 +67,16 @@ class App extends Component {
 
             console.log({ query });
             console.log({ data });
-            const repoCount = data.search.repositoryCount;
+
+            const search = data.search;
+            const repoCount = search.repositoryCount;
             const repoUnit = repoCount > 1 ? "Repositories" : "Repository";
 
             return (
               <Fragment>
                 <h2>{`Results: ${repoCount} ${repoUnit} !`}</h2>
                 <ul>
-                  {data.search.edges.map(edge => {
+                  {search.edges.map(edge => {
                     const node = edge.node;
 
                     return (
@@ -75,6 +88,9 @@ class App extends Component {
                     );
                   })}
                 </ul>
+                {search.pageInfo.hasNextPage === true ? (
+                  <button onClick={this.goNext.bind(this, search)}>Next</button>
+                ) : null}
               </Fragment>
             );
           }}
