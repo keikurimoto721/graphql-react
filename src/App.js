@@ -2,7 +2,7 @@ import React, { Component, Fragment } from "react";
 import { ApolloProvider } from "react-apollo";
 import client from "./client";
 import { Query } from "react-apollo";
-import { ME, HUM, SEARCH_REPOSITORIES } from "./graphql";
+import { SEARCH_REPOSITORIES } from "./graphql";
 
 const StarButton = props => {
   const totalCount = props.node.stargazers.totalCount;
@@ -94,7 +94,11 @@ class App extends Component {
 
                     return (
                       <li key={node.id}>
-                        <a href={node.url} target="_blank">
+                        <a
+                          href={node.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           {node.name}
                         </a>
                         &nbsp;
