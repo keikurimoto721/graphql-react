@@ -45,6 +45,15 @@ class App extends Component {
       before: null
     });
   }
+  // Backボタン押下時の処理
+  goBack(search) {
+    this.setState({
+      first: null,
+      after: null,
+      last: PER_PAGE,
+      before: search.pageInfo.startCursor
+    });
+  }
 
   render() {
     const { query, first, last, before, after } = this.state;
@@ -88,6 +97,9 @@ class App extends Component {
                     );
                   })}
                 </ul>
+                {search.pageInfo.hasPreviousPage === true ? (
+                  <button onClick={this.goBack.bind(this, search)}>Back</button>
+                ) : null}
                 {search.pageInfo.hasNextPage === true ? (
                   <button onClick={this.goNext.bind(this, search)}>Next</button>
                 ) : null}
