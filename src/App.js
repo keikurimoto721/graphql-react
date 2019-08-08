@@ -2,11 +2,24 @@ import React, { Component, Fragment } from "react";
 import { ApolloProvider } from "react-apollo";
 import client from "./client";
 import { Query } from "react-apollo";
-import { ME, HUM, SEARCH_REPOSITORIES } from "./graphql";
+import { SEARCH_REPOSITORIES } from "./graphql";
 
+const StarButton = props => {
+  const node = props.node;
+  const totalCount = node.stargazers.totalCount;
+  const viewerHasStarred = node.viewerHasStarred;
+  const starCount = totalCount === 1 ? "1 star" : `${totalCount} stars`;
+  return (
+    <button>
+      {starCount} | {viewerHasStarred ? "starred!!" : "-"}
+    </button>
+  );
+};
+
+const PER_PAGE = 5;
 // DEFAULT_STATE
 const DEFAULT_STATE = {
-  first: 5,
+  first: PER_PAGE,
   after: null,
   last: null,
   before: null,
@@ -35,6 +48,25 @@ class App extends Component {
     event.preventDefault();
   }
 
+  // 次へボタン押下時の処理
+  goNext(search) {
+    this.setState({
+      first: PER_PAGE,
+      after: search.pageInfo.endCursor,
+      last: null,
+      before: null
+    });
+  }
+  // Backボタン押下時の処理
+  goBack(search) {
+    this.setState({
+      first: null,
+      after: null,
+      last: PER_PAGE,
+      before: search.pageInfo.startCursor
+    });
+  }
+
   render() {
     const { query, first, last, before, after } = this.state;
 
@@ -56,25 +88,39 @@ class App extends Component {
 
             console.log({ query });
             console.log({ data });
-            const repoCount = data.search.repositoryCount;
+
+            const search = data.search;
+            const repoCount = search.repositoryCount;
             const repoUnit = repoCount > 1 ? "Repositories" : "Repository";
 
             return (
               <Fragment>
                 <h2>{`Results: ${repoCount} ${repoUnit} !`}</h2>
                 <ul>
-                  {data.search.edges.map(edge => {
+                  {search.edges.map(edge => {
                     const node = edge.node;
 
                     return (
                       <li key={node.id}>
-                        <a href={node.url} target="_blank">
+                        <a
+                          href={node.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           {node.name}
                         </a>
+                        &nbsp;
+                        <StarButton node={node} />
                       </li>
                     );
                   })}
                 </ul>
+                {search.pageInfo.hasPreviousPage === true ? (
+                  <button onClick={this.goBack.bind(this, search)}>Back</button>
+                ) : null}
+                {search.pageInfo.hasNextPage === true ? (
+                  <button onClick={this.goNext.bind(this, search)}>Next</button>
+                ) : null}
               </Fragment>
             );
           }}
