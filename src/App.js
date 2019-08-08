@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, Fragment } from "react";
 import { ApolloProvider } from "react-apollo";
 import client from "./client";
 import { Query } from "react-apollo";
@@ -58,8 +58,25 @@ class App extends Component {
             console.log({ data });
             const repoCount = data.search.repositoryCount;
             const repoUnit = repoCount > 1 ? "Repositories" : "Repository";
-            const title = `Results: ${repoCount} ${repoUnit} !`;
-            return <h2>{title}</h2>;
+
+            return (
+              <Fragment>
+                <h2>{`Results: ${repoCount} ${repoUnit} !`}</h2>
+                <ul>
+                  {data.search.edges.map(edge => {
+                    const node = edge.node;
+
+                    return (
+                      <li key={node.id}>
+                        <a href={node.url} target="_blank">
+                          {node.name}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Fragment>
+            );
           }}
         </Query>
       </ApolloProvider>
