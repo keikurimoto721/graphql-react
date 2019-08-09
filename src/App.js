@@ -2,15 +2,30 @@ import React, { Component, Fragment } from "react";
 import { ApolloProvider, Mutation, Query } from "react-apollo";
 import client from "./client";
 import { ADD_STAR, REMOVE_STAR, SEARCH_REPOSITORIES } from "./graphql";
+import Button from "@material-ui/core/Button";
+import { makeStyles } from "@material-ui/core/styles";
+
+const useStyles = makeStyles(theme => ({
+  button: {
+    margin: theme.spacing(1)
+  },
+  input: {
+    display: "none"
+  }
+}));
 
 const StarButton = props => {
+  const classes = useStyles();
   const node = props.node;
   const totalCount = node.stargazers.totalCount;
   const viewerHasStarred = node.viewerHasStarred;
   const starCount = totalCount === 1 ? "1 star" : `${totalCount} stars`;
   const StarStatus = ({ addOrRemoveStar }) => {
     return (
-      <button
+      <Button
+        variant="contained"
+        color="primary"
+        className={classes.button}
         onClick={() => {
           addOrRemoveStar({
             variables: { input: { starrableId: node.id } }
@@ -18,7 +33,7 @@ const StarButton = props => {
         }}
       >
         {starCount} | {viewerHasStarred ? "starred" : "-"}
-      </button>
+      </Button>
     );
   };
   return (
