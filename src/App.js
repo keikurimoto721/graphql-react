@@ -3,6 +3,9 @@ import { ApolloProvider, Mutation, Query } from "react-apollo";
 import client from "./client";
 import { ADD_STAR, REMOVE_STAR, SEARCH_REPOSITORIES } from "./graphql";
 import Button from "@material-ui/core/Button";
+import AppBar from "@material-ui/core/AppBar";
+import Toolbar from "@material-ui/core/Toolbar";
+import Typography from "@material-ui/core/Typography";
 import { makeStyles } from "@material-ui/core/styles";
 
 const useStyles = makeStyles(theme => ({
@@ -28,7 +31,32 @@ const StarButton = props => {
         className={classes.button}
         onClick={() => {
           addOrRemoveStar({
-            variables: { input: { starrableId: node.id } }
+            variables: { input: { starrableId: node.id } },
+            update: (store, { data: { addStar, removeStar } }) => {
+              console.log("update");
+              const { starrable } = addStar || removeStar;
+              const data = store.readQuery({
+                query: SEARCH_REPOSITORIES,
+                variables: { query, first, last, after, before }
+              });
+              console.log("after readQuery");
+              console.log({ data });
+
+              const edges = data.search.edges;
+              const newEdges = edges.map(edge => {
+                if (edge.node.id === node.id) {
+                  const totalCount = edge.node.stargazers.totalCount;
+                  const diff = starrable.viewerHasStarred ? 1 : -1;
+                  const newTotalCount = totalCount + diff;
+                  edge.node.stargazers.totalCount = newTotalCount;
+                }
+                return edge;
+              });
+              data.search.edges = newEdges;
+              store.writeQuery({ query: SEARCH_REPOSITORIES, data });
+              console.log("after writeQuery");
+              console.log({ data });
+            }
           });
         }}
       >
@@ -39,15 +67,15 @@ const StarButton = props => {
   return (
     <Mutation
       mutation={viewerHasStarred ? REMOVE_STAR : ADD_STAR}
-      refetchQueries={mutationResult => {
-        console.log({ mutationResult });
-        return [
-          {
-            query: SEARCH_REPOSITORIES,
-            variables: { query, first, last, before, after }
-          }
-        ];
-      }}
+      // refetchQueries={mutationResult => {
+      //   console.log({ mutationResult });
+      //   return [
+      //     {
+      //       query: SEARCH_REPOSITORIES,
+      //       variables: { query, first, last, before, after }
+      //     }
+      //   ];
+      // }}
     >
       {addOrRemoveStar => <StarStatus addOrRemoveStar={addOrRemoveStar} />}
     </Mutation>
@@ -109,64 +137,75 @@ class App extends Component {
     const { query, first, last, before, after } = this.state;
 
     return (
-      <ApolloProvider client={client}>
-        <form onSubmit={this.handleSubmit}>
-          <input value={query} onChange={this.handleChange} size="50" />
-        </form>
+      <Fragment>
+        <AppBar position="static" color="default">
+          <Toolbar>
+            <Typography variant="title" color="inherit">
+              Hello, GraphQL!!
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <ApolloProvider client={client}>
+          <form onSubmit={this.handleSubmit}>
+            <input value={query} onChange={this.handleChange} size="50" />
+          </form>
 
-        <div>Hello, GraphQL</div>
+          <Query
+            query={SEARCH_REPOSITORIES}
+            variables={{ query, first, last, before, after }}
+          >
+            {({ loading, error, data }) => {
+              if (loading) return "Loading...";
+              if (error) return `Error! ${error.message}`;
 
-        <Query
-          query={SEARCH_REPOSITORIES}
-          variables={{ query, first, last, before, after }}
-        >
-          {({ loading, error, data }) => {
-            if (loading) return "Loading...";
-            if (error) return `Error! ${error.message}`;
+              console.log({ query });
+              console.log({ data });
 
-            console.log({ query });
-            console.log({ data });
+              const search = data.search;
+              const repoCount = search.repositoryCount;
+              const repoUnit = repoCount > 1 ? "Repositories" : "Repository";
 
-            const search = data.search;
-            const repoCount = search.repositoryCount;
-            const repoUnit = repoCount > 1 ? "Repositories" : "Repository";
+              return (
+                <Fragment>
+                  <h2>{`Results: ${repoCount} ${repoUnit} !`}</h2>
+                  <ul>
+                    {search.edges.map(edge => {
+                      const node = edge.node;
 
-            return (
-              <Fragment>
-                <h2>{`Results: ${repoCount} ${repoUnit} !`}</h2>
-                <ul>
-                  {search.edges.map(edge => {
-                    const node = edge.node;
-
-                    return (
-                      <li key={node.id}>
-                        <a
-                          href={node.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {node.name}
-                        </a>
-                        &nbsp;
-                        <StarButton
-                          node={node}
-                          {...{ query, first, last, before, after }}
-                        />
-                      </li>
-                    );
-                  })}
-                </ul>
-                {search.pageInfo.hasPreviousPage === true ? (
-                  <button onClick={this.goBack.bind(this, search)}>Back</button>
-                ) : null}
-                {search.pageInfo.hasNextPage === true ? (
-                  <button onClick={this.goNext.bind(this, search)}>Next</button>
-                ) : null}
-              </Fragment>
-            );
-          }}
-        </Query>
-      </ApolloProvider>
+                      return (
+                        <li key={node.id}>
+                          <a
+                            href={node.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {node.name}
+                          </a>
+                          &nbsp;
+                          <StarButton
+                            node={node}
+                            {...{ query, first, last, before, after }}
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {search.pageInfo.hasPreviousPage === true ? (
+                    <button onClick={this.goBack.bind(this, search)}>
+                      Back
+                    </button>
+                  ) : null}
+                  {search.pageInfo.hasNextPage === true ? (
+                    <button onClick={this.goNext.bind(this, search)}>
+                      Next
+                    </button>
+                  ) : null}
+                </Fragment>
+              );
+            }}
+          </Query>
+        </ApolloProvider>
+      </Fragment>
     );
   }
 }
