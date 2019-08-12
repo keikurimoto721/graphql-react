@@ -28,7 +28,32 @@ const StarButton = props => {
         className={classes.button}
         onClick={() => {
           addOrRemoveStar({
-            variables: { input: { starrableId: node.id } }
+            variables: { input: { starrableId: node.id } },
+            update: (store, { data: { addStar, removeStar } }) => {
+              console.log("update");
+              const { starrable } = addStar || removeStar;
+              const data = store.readQuery({
+                query: SEARCH_REPOSITORIES,
+                variables: { query, first, last, after, before }
+              });
+              console.log("after readQuery");
+              console.log({ data });
+
+              const edges = data.search.edges;
+              const newEdges = edges.map(edge => {
+                if (edge.node.id === node.id) {
+                  const totalCount = edge.node.stargazers.totalCount;
+                  const diff = starrable.viewerHasStarred ? 1 : -1;
+                  const newTotalCount = totalCount + diff;
+                  edge.node.stargazers.totalCount = newTotalCount;
+                }
+                return edge;
+              });
+              data.search.edges = newEdges;
+              store.writeQuery({ query: SEARCH_REPOSITORIES, data });
+              console.log("after writeQuery");
+              console.log({ data });
+            }
           });
         }}
       >
@@ -39,15 +64,15 @@ const StarButton = props => {
   return (
     <Mutation
       mutation={viewerHasStarred ? REMOVE_STAR : ADD_STAR}
-      refetchQueries={mutationResult => {
-        console.log({ mutationResult });
-        return [
-          {
-            query: SEARCH_REPOSITORIES,
-            variables: { query, first, last, before, after }
-          }
-        ];
-      }}
+      // refetchQueries={mutationResult => {
+      //   console.log({ mutationResult });
+      //   return [
+      //     {
+      //       query: SEARCH_REPOSITORIES,
+      //       variables: { query, first, last, before, after }
+      //     }
+      //   ];
+      // }}
     >
       {addOrRemoveStar => <StarStatus addOrRemoveStar={addOrRemoveStar} />}
     </Mutation>
@@ -124,8 +149,8 @@ class App extends Component {
             if (loading) return "Loading...";
             if (error) return `Error! ${error.message}`;
 
-            console.log({ query });
-            console.log({ data });
+            // console.log({ query });
+            // console.log({ data });
 
             const search = data.search;
             const repoCount = search.repositoryCount;
